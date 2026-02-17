@@ -1,6 +1,6 @@
 # osea-burn
-部署在Cloudflare Workers&Pages上的阅后即焚小工具支持图片视频音频
-🔥 OSEA Burn - 极简阅后即焚文件分享系统
+**部署在Cloudflare Workers&Pages上的阅后即焚小工具支持图片视频音频**
+🔥 OSEA Burn - 极简阅后即焚文件分享
 OSEA Burn 是一个基于 Cloudflare Workers (无服务器计算)、R2 (对象存储) 和 KV (键值数据库) 构建的轻量级、安全、开源的“阅后即焚”文件分享工具。
 
 它是为了极简部署而设计的：
