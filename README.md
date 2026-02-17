@@ -3,10 +3,10 @@
 # 🔥 OSEA Burn
 ### 极简主义 · 阅后即焚 · 隐私安全
 
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange?style=flat-square&logo=cloudflare)
-![Cloudflare R2](https://img.shields.io/badge/Cloudflare-R2-yellow?style=flat-square&logo=cloudflare)
-![Cloudflare KV](https://img.shields.io/badge/Cloudflare-KV-blue?style=flat-square&logo=cloudflare)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Cloudflare Workers](https://workers.cloudflare.com/)
+![Cloudflare R2](https://www.cloudflare.com/zh-cn/developer-platform/products/r2/)
+![Cloudflare KV](https://workers.cloudflare.com/product/kv/)
+![License](https://opensource.org/license/MIT)
 
 [👉 **在线演示 (Live Demo)**](https://burn.osea.cloud/)
 
