@@ -53,16 +53,6 @@
 4.  上传包含 `index.html` 的文件夹。
 5.  部署完成！
 
----
-
-## 📸 界面预览
-
-| 深色模式 | 浅色模式 |
-| :---: | :---: |
-| *<img width="2537" height="1169" alt="image" src="https://github.com/user-attachments/assets/55308178-a775-47a5-a46a-1ff770d60fe5" />
-* | *<img width="2556" height="1170" alt="image" src="https://github.com/user-attachments/assets/1bc05adb-701c-4daa-82ac-4e54bf0821fd" />
-* |
-
 
 ---
 
