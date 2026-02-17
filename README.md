@@ -1,12 +1,7 @@
 <div align="center">
 
 # 🔥 OSEA Burn
-### 极简主义 · 阅后即焚 · 隐私安全
-
-![Cloudflare Workers](https://workers.cloudflare.com/)
-![Cloudflare R2](https://www.cloudflare.com/zh-cn/developer-platform/products/r2/)
-![Cloudflare KV](https://workers.cloudflare.com/product/kv/)
-![License](https://opensource.org/license/MIT)
+### 阅后即焚 · 隐私安全
 
 [👉 **在线演示 (Live Demo)**](https://burn.osea.cloud/)
 
