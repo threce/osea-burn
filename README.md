@@ -52,7 +52,7 @@
 2.  使用编辑器打开，修改底部的配置：
     ```javascript
     // 将此处修改为你第一步部署的 Worker 域名
-    const API_BASE = '[https://你的Worker域名.workers.dev](https://你的Worker域名.workers.dev)';
+    const API_BASE = 'https://你的Worker域名.workers.dev';
     ```
 3.  在 Cloudflare 中进入 **Workers & Pages** -> **Create application** -> **Pages** -> **Upload assets**。
 4.  上传包含 `index.html` 的文件夹。
@@ -64,9 +64,10 @@
 
 | 深色模式 | 浅色模式 |
 | :---: | :---: |
-| *(此处可上传一张深色模式截图)* | *(此处可上传一张浅色模式截图)* |
+| *<img width="2537" height="1169" alt="image" src="https://github.com/user-attachments/assets/55308178-a775-47a5-a46a-1ff770d60fe5" />
+* | *<img width="2556" height="1170" alt="image" src="https://github.com/user-attachments/assets/1bc05adb-701c-4daa-82ac-4e54bf0821fd" />
+* |
 
-> *提示：你可以将截图上传到仓库，然后替换上面的文字链接。*
 
 ---
 
