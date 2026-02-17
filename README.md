@@ -59,6 +59,3 @@
 ## 📝 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源。
-这意味着你可以免费使用、复制、修改和分发本项目，只需保留原作者版权声明。
-
-Copyright (c) 2026 OSEA Cloud Systems
