@@ -11,7 +11,7 @@
 
 ## 📖 项目介绍
 
-**OSEA Burn** 是一个基于 Cloudflare 强大生态（Workers, R2, KV, Pages）构建的轻量级文件分享工具。
+**OSEA Burn** 是一个基于 Cloudflare 强大生态（Workers, R2, KV, Pages）构建的轻量级秘密分享工具。
 
 它专为**安全**与**隐私**设计。所有上传的文件和文本在被访问一次后，会立即从服务器上物理销毁，不可恢复。整个系统无需服务器（Serverless），无需复杂的后端维护，前端仅需一个 HTML 文件即可运行。
 
@@ -28,7 +28,7 @@
 
 ## 🛠️ 部署指南
 
-无需服务器，无需安装 Node.js，只需一个 Cloudflare 账号。
+无需服务器，只需一个 Cloudflare 账号。
 
 ### 第一步：后端部署 (Worker)
 
