@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSEA Burn After Reading-阅后即焚</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { surface: { light: '#ffffff', dark: '#0a0a0a' }, softgray: '#f3f4f6' },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards', 'slide-up': 'slideUp 0.5s ease-out forwards' },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.05); }
+        .dark .glass { background: rgba(20, 20, 20, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { background-color: #f3f4f6; -webkit-user-select: none; user-select: none; } 
+        .dark body { background-color: #000000; }
+        img, video, audio { pointer-events: auto; }
+        video::-webkit-media-controls-enclosure { overflow: hidden; }
+        video::-webkit-media-controls-panel { width: calc(100% + 30px); }
+    </style>
+</head>
+<body oncontextmenu="return false" x-data="app()" class="text-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-500">
+
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-sm px-4">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-transition class="glass px-6 py-3 rounded-full shadow-lg flex items-center justify-center text-sm font-medium tracking-wide backdrop-blur-md"
+                 :class="toast.type === 'error' ? 'text-red-500 border-red-500/20' : 'text-green-600 dark:text-green-400 border-green-500/20'">
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <nav class="w-full p-6 flex justify-between items-center animate-fade-in select-none">
+        <div class="font-mono text-xs tracking-[0.2em] opacity-50">OSEA BURN</div>
+        <div class="flex gap-4">
+            <button @click="toggleLang" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition">
+                <span x-text="lang === 'zh' ? 'EN' : '中'" class="text-xs font-bold"></span>
+            </button>
+            <button @click="toggleTheme" class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition">
+                <svg x-show="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg x-show="!isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-3xl mx-auto relative animate-slide-up">
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tighter mb-2 text-center select-none">OSEA BURN</h1>
+        <p class="text-xs uppercase tracking-[0.4em] opacity-40 mb-12 text-center select-none" x-text="t.subtitle"></p>
+
+        <div class="w-full glass rounded-[2rem] p-8 md:p-12 shadow-2xl relative overflow-hidden transition-all duration-500" :class="loading ? 'scale-[0.98] opacity-80' : 'scale-100'">
+            
+            <div x-show="!viewMode" x-collapse>
+                <div class="mb-8 select-none">
+                    <div class="flex justify-between text-[10px] uppercase tracking-wider mb-2 opacity-60 font-mono">
+                        <span x-text="t.storage">R2 STORAGE</span>
+                        <span><span x-text="status.usage_gb"></span> / 9 GB</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-1000 ease-out"
+                             :class="status.full ? 'bg-red-500' : 'bg-black dark:bg-white'"
+                             :style="`width: ${status.percent}%`"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="viewMode" x-cloak>
+                <div x-show="loading" class="py-20 flex flex-col items-center justify-center gap-4">
+                    <div class="w-8 h-8 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs tracking-widest opacity-50 animate-pulse">DECRYPTING...</span>
+                </div>
+
+                <div x-show="!loading && error" class="py-10 text-center select-none">
+                    <div class="text-4xl mb-4">🚫</div>
+                    <h3 class="text-lg font-bold mb-2" x-text="t.accessDenied">ACCESS DENIED</h3>
+                    <p class="text-sm opacity-60 font-mono mb-8" x-text="errorMsg"></p>
+                    <button @click="resetApp" class="px-8 py-3 rounded-full border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition text-xs tracking-widest uppercase">
+                        <span x-text="t.backHome">Back Home</span>
+                    </button>
+                </div>
+
+                <div x-show="!loading && !error" class="space-y-8">
+                    <div class="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-4 select-none">
+                        <span class="text-xs font-mono opacity-40">MESSAGE CONTENT</span>
+                        <span x-show="content.type === 'admin'" class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold tracking-wider">ADMIN</span>
+                    </div>
+
+                    <div x-show="content.text" class="text-sm md:text-base leading-relaxed whitespace-pre-wrap font-mono select-text" x-text="content.text"></div>
+
+                    <div class="space-y-4">
+                        <template x-for="(file, index) in content.files" :key="index">
+                            <div class="rounded-xl overflow-hidden border border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 relative">
+                                <template x-if="file.type.startsWith('image/')">
+                                    <img :src="file.url" class="w-full h-auto block select-none" ondragstart="return false;">
+                                </template>
+                                <template x-if="file.type.startsWith('video/')">
+                                    <video controls controlslist="nodownload" disablePictureInPicture :src="file.url" class="w-full h-auto block"></video>
+                                </template>
+                                <template x-if="file.type.startsWith('audio/')">
+                                    <div class="p-4 flex flex-col items-center justify-center">
+                                        <div class="text-[10px] opacity-50 mb-2" x-text="file.name"></div>
+                                        <audio controls controlslist="nodownload" :src="file.url" class="w-full"></audio>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="pt-8 text-center select-none">
+                        <p class="text-[10px] text-red-500 uppercase tracking-widest opacity-70" x-text="t.destroyedMsg">
+                            Message destroyed from server.
+                        </p>
+                        <button @click="resetApp" class="mt-6 w-full py-4 bg-black text-white dark:bg-white dark:text-black rounded-xl hover:opacity-90 active:scale-[0.99] transition font-medium text-xs tracking-widest uppercase">
+                            <span x-text="t.createNew">Create New</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="!viewMode" x-transition:enter="transition ease-out duration-500 delay-200">
+                <form @submit.prevent="submitForm" class="space-y-6">
+                    
+                    <textarea x-model="form.text" 
+                        class="w-full h-40 bg-transparent border border-black/10 dark:border-white/10 rounded-xl p-4 focus:outline-none focus:border-black/30 dark:focus:border-white/30 resize-none text-sm transition-colors placeholder-gray-400 dark:placeholder-gray-600 font-mono select-text" 
+                        :placeholder="t.textPlaceholder"></textarea>
+
+                    <div class="relative" 
+                         @dragover.prevent="isDragging = true" 
+                         @dragleave.prevent="isDragging = false" 
+                         @drop.prevent="handleDrop($event)">
+                        
+                        <input type="file" id="fileInput" @change="handleFile" class="hidden" :disabled="status.full" accept="image/*,video/*,audio/*" multiple>
+                        
+                        <label for="fileInput" 
+                               class="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-xl transition-all duration-300 group h-32"
+                               :class="[
+                                   isDragging ? 'border-black dark:border-white bg-black/5 dark:bg-white/5 scale-[1.02]' : 'border-black/20 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5',
+                                   status.full ? 'opacity-50 cursor-not-allowed border-red-500' : 'cursor-pointer'
+                               ]">
+                            
+                            <div class="flex flex-col items-center gap-2" x-show="!status.full">
+                                <div class="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-gray-500 transition-colors"
+                                     :class="isDragging ? 'text-black dark:text-white' : ''">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                </div>
+                                <span class="text-xs uppercase tracking-wider text-gray-500 text-center">
+                                    <span x-text="t.uploadText"></span>
+                                    <br>
+                                    <span class="text-[10px] opacity-70" x-text="t.maxSize"></span>
+                                </span>
+                            </div>
+
+                            <div x-show="status.full" class="text-red-500 flex flex-col items-center gap-2 animate-pulse">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <span class="text-xs font-bold uppercase tracking-widest">9GB LIMIT REACHED</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div x-show="form.files.length > 0" class="space-y-2 select-none border border-black/10 dark:border-white/10 rounded-xl p-4 bg-white/30 dark:bg-black/30">
+                        <div class="flex justify-between items-center pb-2 border-b border-black/5 dark:border-white/5 mb-2">
+                             <span class="text-[10px] uppercase tracking-wider opacity-50" x-text="t.selectedFiles"></span>
+                             <button @click.prevent="clearFiles" class="text-[10px] text-red-500 hover:text-red-600 uppercase tracking-wider font-bold" x-text="t.clearAll">CLEAR ALL</button>
+                        </div>
+                        <template x-for="(file, index) in form.files" :key="index">
+                            <div class="flex items-center justify-between text-xs p-2 rounded hover:bg-black/5 dark:hover:bg-white/5 transition group">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <div class="w-2 h-2 rounded-full bg-black/20 dark:bg-white/20"></div>
+                                    <span class="truncate max-w-[180px]" x-text="file.name"></span>
+                                    <span class="text-[10px] opacity-40 whitespace-nowrap" x-text="(file.size/1024/1024).toFixed(2) + 'MB'"></span>
+                                </div>
+                                <button @click.prevent="removeFile(index)" class="p-1 text-gray-400 hover:text-red-500 transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <button type="submit" 
+                            :disabled="isSubmitting || (status.full && !form.text) || (!form.text && form.files.length === 0)"
+                            class="w-full h-14 rounded-xl font-medium text-xs tracking-[0.2em] uppercase relative overflow-hidden bg-black text-white dark:bg-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg">
+                        
+                        <div class="absolute inset-0 z-0"></div>
+
+                        <div x-show="isSubmitting" 
+                             class="absolute inset-y-0 left-0 bg-gray-600 dark:bg-gray-300 transition-all duration-200 z-10"
+                             :style="`width: ${uploadProgress}%`"></div>
+
+                        <div class="relative z-20 flex items-center justify-center gap-2 h-full">
+                            <span x-show="!isSubmitting" x-text="t.generateBtn">GENERATE LINK</span>
+                            <div x-show="isSubmitting" class="flex items-center gap-2">
+                                <span class="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
+                                <span>PROCESSING <span x-text="uploadProgress + '%'"></span></span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+
+                <div x-show="resultLink" x-collapse class="mt-8 pt-8 border-t border-black/10 dark:border-white/10 select-none">
+                    <div class="bg-black/5 dark:bg-white/5 p-4 rounded-xl flex items-center justify-between gap-4">
+                        <input type="text" :value="resultLink" readonly class="bg-transparent w-full text-xs font-mono focus:outline-none opacity-80 select-all">
+                        <button @click="copyLink" class="text-xs font-bold uppercase hover:opacity-60 transition px-2" x-text="t.copy">COPY</button>
+                    </div>
+                    <p class="text-[10px] text-center mt-3 opacity-40 uppercase tracking-widest" x-text="t.validityHint">Valid for 24 hours. One-time access only.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-6 text-[10px] opacity-30 tracking-[0.2em] text-center font-mono select-none">
+        Powered by OSEA CLOUD
+    </footer>
+
+    <script>
+        // ⚠️ 部署配置 (使用者必须修改此处)
+        // 填写部署后的 Worker 域名
+        const API_BASE = 'https://YOUR_WORKER_DOMAIN.workers.dev'; 
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey && (e.key === 's' || e.key === 'p')) || e.key === 'F12') {
+                e.preventDefault();
+            }
+        });
+
+        function app() {
+            return {
+                lang: 'zh',
+                isDark: false,
+                isDragging: false,
+                viewMode: false,
+                loading: false,
+                error: false,
+                errorMsg: '',
+                isSubmitting: false,
+                uploadProgress: 0, 
+                resultLink: null,
+                content: { text: '', files: [] },
+                toasts: [],
+                status: { usage_gb: '0.00', percent: 0, full: false },
+                form: { text: '', files: [] },
+                
+                dict: {
+                    zh: {
+                        subtitle: '阅 后 即 焚',
+                        storage: '实时存储',
+                        textPlaceholder: '在此输入加密内容...',
+                        uploadText: '上传 图片 / 视频 / 音频',
+                        maxSize: '(总计最大 50MB)',
+                        selectedFiles: '已选文件',
+                        clearAll: '清空列表',
+                        generateBtn: '生成一次性链接',
+                        copy: '复制',
+                        validityHint: '有效期24小时 · 访问一次即失效',
+                        accessDenied: '访问被拒绝',
+                        backHome: '返回首页',
+                        destroyedMsg: '此消息已从服务器永久销毁，请勿刷新',
+                        createNew: '创建新密信',
+                        toastCopied: '链接已复制到剪贴板',
+                        toastError: '发生错误: '
+                    },
+                    en: {
+                        subtitle: 'BURN AFTER READING',
+                        storage: 'R2 STORAGE',
+                        textPlaceholder: 'Type your secret here...',
+                        uploadText: 'Image / Video / Audio',
+                        maxSize: '(MAX 50MB TOTAL)',
+                        selectedFiles: 'SELECTED FILES',
+                        clearAll: 'CLEAR ALL',
+                        generateBtn: 'GENERATE SECURE LINK',
+                        copy: 'COPY',
+                        validityHint: 'Valid for 24h · Self-destructs after view',
+                        accessDenied: 'ACCESS DENIED',
+                        backHome: 'RETURN HOME',
+                        destroyedMsg: 'This message has been permanently destroyed.',
+                        createNew: 'CREATE NEW',
+                        toastCopied: 'Link copied to clipboard',
+                        toastError: 'Error: '
+                    }
+                },
+
+                get t() { return this.dict[this.lang]; },
+
+                init() {
+                    const savedTheme = localStorage.getItem('theme');
+                    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        this.isDark = true;
+                        document.documentElement.classList.add('dark');
+                    }
+                    const savedLang = localStorage.getItem('lang');
+                    if (savedLang) this.lang = savedLang;
+
+                    const hash = window.location.hash;
+                    if (hash.startsWith('#view=')) {
+                        const token = hash.replace('#view=', '');
+                        this.viewMode = true;
+                        this.fetchSecret(token);
+                    } else {
+                        this.fetchStats();
+                    }
+                },
+
+                toggleTheme() {
+                    this.isDark = !this.isDark;
+                    document.documentElement.classList.toggle('dark', this.isDark);
+                    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                },
+
+                toggleLang() {
+                    this.lang = this.lang === 'zh' ? 'en' : 'zh';
+                    localStorage.setItem('lang', this.lang);
+                },
+
+                notify(message, type = 'success') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type });
+                    setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3000);
+                },
+
+                async fetchStats() {
+                    try {
+                        const res = await fetch(`${API_BASE}/status`);
+                        if(res.ok) this.status = await res.json();
+                    } catch(e) {}
+                },
+
+                handleFile(e) {
+                    if (this.status.full) return;
+                    const newFiles = Array.from(e.target.files);
+                    this.addFiles(newFiles);
+                    e.target.value = ''; 
+                },
+
+                handleDrop(e) {
+                    if (this.status.full) return;
+                    this.isDragging = false;
+                    const newFiles = Array.from(e.dataTransfer.files);
+                    this.addFiles(newFiles);
+                },
+
+                addFiles(files) {
+                    let totalSize = this.form.files.reduce((acc, f) => acc + f.size, 0);
+                    
+                    for (const file of files) {
+                        if (totalSize + file.size > 50 * 1024 * 1024) {
+                            this.notify('文件总大小超过 50MB', 'error');
+                            break;
+                        }
+                        this.form.files.push(file);
+                        totalSize += file.size;
+                    }
+                },
+
+                removeFile(index) {
+                    this.form.files.splice(index, 1);
+                },
+
+                clearFiles() {
+                    this.form.files = [];
+                },
+
+                async submitForm() {
+                    this.isSubmitting = true;
+                    this.uploadProgress = 0;
+                    this.resultLink = null;
+                    const formData = new FormData();
+                    formData.append('text', this.form.text);
+                    for (const file of this.form.files) {
+                        formData.append('files', file);
+                    }
+
+                    const xhr = new XMLHttpRequest();
+
+                    xhr.upload.addEventListener("progress", (event) => {
+                        if (event.lengthComputable) {
+                            this.uploadProgress = Math.round((event.loaded / event.total) * 100);
+                        }
+                    });
+
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState === 4) {
+                            this.isSubmitting = false;
+                            if (xhr.status === 200) {
+                                try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    this.resultLink = data.link;
+                                    this.form.text = '';
+                                    this.form.files = [];
+                                    this.fetchStats();
+                                } catch (e) {
+                                    this.notify(this.t.toastError + "Invalid Response", 'error');
+                                }
+                            } else {
+                                let errorText = "Upload Failed";
+                                try {
+                                    const errData = JSON.parse(xhr.responseText);
+                                    if(errData.error) errorText = errData.error;
+                                } catch(e){}
+                                this.notify(this.t.toastError + errorText, 'error');
+                            }
+                        }
+                    };
+
+                    xhr.open("POST", `${API_BASE}/create`, true);
+                    xhr.send(formData);
+                },
+
+                copyLink() {
+                    navigator.clipboard.writeText(this.resultLink).then(() => {
+                        this.notify(this.t.toastCopied);
+                    });
+                },
+
+                async fetchSecret(token) {
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`${API_BASE}/view?token=${token}`);
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Fetch failed');
+                        this.content = data;
+                    } catch (e) {
+                        this.error = true;
+                        this.errorMsg = e.message;
+                    } finally {
+                        this.loading = false;
+                        history.replaceState(null, null, ' ');
+                    }
+                },
+
+                resetApp() {
+                    window.location.href = window.location.origin;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
